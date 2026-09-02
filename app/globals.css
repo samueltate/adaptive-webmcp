@@ -70,7 +70,7 @@ h3 { font-size:1.08em; }
 .renew-card { background:#153c72; color:white; padding:34px; border-radius:5px; box-shadow:0 18px 38px rgba(20,47,82,.18); border-top:5px solid #dfad3e; }
 .renew-card>span { text-transform:uppercase; letter-spacing:.1em; font-size:.74em; font-weight:800; color:#f6d990; }
 .renew-card h2 { font-size:2em; margin:10px 0 12px; }
-.dmv-hero .renew-card p { color:#fff; margin-bottom:0; }
+.dmv-hero .hero-grid > .renew-card > p:not(.eyebrow) { color:#fff !important; margin-bottom:0; }
 .renew-card p + button { margin-top:24px; }
 .renew-card button,.hero-buttons button,.primary-action { border:0; background:#e4b044; color:#152844; padding:14px 18px; font-weight:800; display:flex; align-items:center; justify-content:center; gap:9px; cursor:pointer; border-radius:3px; }
 .service-section,.county-services,.specialties { padding-top:70px; padding-bottom:78px; }

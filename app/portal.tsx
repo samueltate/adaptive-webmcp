@@ -3,8 +3,8 @@
 import {
   Accessibility, AlertCircle, ArrowRight, Building2, CalendarDays, Car,
   CheckCircle2, ChevronDown, Clock3, FileText, HeartPulse, Hospital,
-  Languages, MapPin, Menu, Phone, Search, ShieldCheck, Stethoscope,
-  Trash2, UserRound, Vote, X,
+  Languages, MapPin, Menu, Pause, Phone, Play, Search, ShieldCheck,
+  Stethoscope, Trash2, UserRound, Vote, X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -57,6 +57,31 @@ function Brand({ kind }: { kind: PortalKind }) {
 
 function Header({ kind, simplified, onOptions }: { kind: PortalKind; simplified: boolean; onOptions: () => void }) {
   return <><NetworkBar kind={kind}/>{kind === "hospital" && <div className="emergency-strip"><div className="site-width"><b>Medical emergency?</b> Call 911. <a href="#care">Find urgent care</a></div></div>}<header className="main-header"><div className="site-width header-row"><Brand kind={kind}/><div className="header-actions"><button className="display-button" onClick={onOptions}><Accessibility size={19}/> Display options</button><button className="portal-button"><UserRound size={17}/>{kind === "hospital" ? "Patient portal" : kind === "county" ? "MyOak account" : "MyDMV"}</button></div></div><nav className="primary-nav" aria-label="Main navigation"><div className="site-width nav-row">{(simplified ? linkSets[kind].slice(0, 2) : linkSets[kind]).map((link)=><a href="#services" key={link}>{link}</a>)}{!simplified && <a href="#contact">Contact</a>}<button aria-label="Search"><Search size={20}/><span>Search</span></button><button className="mobile-menu"><Menu size={22}/><span>Menu</span></button></div></nav></header></>;
+}
+
+const updatesByKind: Record<PortalKind, string[]> = {
+  dmv: ["Downtown office wait time: 42 minutes", "Mobile unit at Northside Library through 3 p.m.", "Online registration services are operating normally"],
+  hospital: ["Urgent care at Lakeview: 18-minute estimated wait", "Visitor entrance B closes at 8 p.m.", "Flu vaccination appointments are now available"],
+  county: ["Oak Ridge Road closed between Pine and Market streets", "Recycling collection delayed one day in District 3", "Commissioners meeting begins Tuesday at 6 p.m."],
+};
+
+function MovingUpdates({ kind, reducedMotion }: { kind: PortalKind; reducedMotion: boolean }) {
+  const [paused, setPaused] = useState(false);
+  const stopped = reducedMotion || paused;
+  const updates = updatesByKind[kind];
+
+  return <section className="updates-band" data-stopped={stopped} aria-label="Current service updates">
+    <div className="updates-label"><AlertCircle size={17}/><b>Current updates</b></div>
+    <div className="updates-window">
+      <div className="updates-track">
+        <div className="updates-sequence">{updates.map((item)=><span key={item}>{item}</span>)}</div>
+        <div className="updates-sequence" aria-hidden="true">{updates.map((item)=><span key={item}>{item}</span>)}</div>
+      </div>
+    </div>
+    {reducedMotion
+      ? <div className="motion-status" role="status"><CheckCircle2 size={16}/> Motion reduced</div>
+      : <button className="updates-control" onClick={()=>setPaused((value)=>!value)} aria-pressed={paused}>{paused ? <Play size={15}/> : <Pause size={15}/>} {paused ? "Resume updates" : "Pause updates"}</button>}
+  </section>;
 }
 
 const focusContent: Record<PortalKind, Record<string, { eyebrow: string; title: string; copy: string; steps: string[]; action: string }>> = {
@@ -123,5 +148,5 @@ export function Portal({ kind }: { kind: PortalKind }) {
   const reset=()=>{ setExperience(defaults); try { localStorage.removeItem("adaptive-web-preferences") } catch {} };
   useEffect(()=>registerExperienceTools(kind,()=>experience,update,reset),[kind,experience]);
   const active=useMemo(()=>Object.entries(experience).some(([key,value])=>key==="focusTask"?Boolean(value):value!==defaults[key as keyof Experience]),[experience]);
-  return <div className={`portal portal-${kind}`} data-text={experience.textSize} data-contrast={experience.contrast} data-spacing={experience.spacing} data-motion={experience.reducedMotion?"reduced":"standard"}><Header kind={kind} simplified={experience.navigation==="simplified"} onOptions={()=>setOptionsOpen(true)}/>{active&&!experience.focusTask&&loaded&&<div className="active-preferences"><div className="site-width"><CheckCircle2/><span>{experience.plainLanguage ? "Plain language is active. Content has been rewritten with shorter sentences and more familiar words." : "Your display preferences are active."}</span><button onClick={reset}>Restore standard display</button></div></div>}{experience.focusTask?<FocusPanel kind={kind} task={experience.focusTask} onReset={reset}/>:kind==="dmv"?<DmvHome plain={experience.plainLanguage}/>:kind==="hospital"?<HospitalHome plain={experience.plainLanguage}/>:<CountyHome plain={experience.plainLanguage}/>}<Footer kind={kind}/>{optionsOpen&&<OptionsPanel value={experience} onChange={update} onClose={()=>setOptionsOpen(false)} onReset={reset}/>}</div>;
+  return <div className={`portal portal-${kind}`} data-text={experience.textSize} data-contrast={experience.contrast} data-spacing={experience.spacing} data-motion={experience.reducedMotion?"reduced":"standard"}><Header kind={kind} simplified={experience.navigation==="simplified"} onOptions={()=>setOptionsOpen(true)}/>{active&&!experience.focusTask&&loaded&&<div className="active-preferences"><div className="site-width"><CheckCircle2/><span>{experience.plainLanguage ? "Plain language is active. Content has been rewritten with shorter sentences and more familiar words." : "Your display preferences are active."}</span><button onClick={reset}>Restore standard display</button></div></div>}{!experience.focusTask&&<MovingUpdates kind={kind} reducedMotion={experience.reducedMotion}/>} {experience.focusTask?<FocusPanel kind={kind} task={experience.focusTask} onReset={reset}/>:kind==="dmv"?<DmvHome plain={experience.plainLanguage}/>:kind==="hospital"?<HospitalHome plain={experience.plainLanguage}/>:<CountyHome plain={experience.plainLanguage}/>}<Footer kind={kind}/>{optionsOpen&&<OptionsPanel value={experience} onChange={update} onClose={()=>setOptionsOpen(false)} onReset={reset}/>}</div>;
 }

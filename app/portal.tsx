@@ -6,7 +6,8 @@ import {
   Languages, MapPin, Menu, Pause, Phone, Play, Search, ShieldCheck,
   Smartphone, Stethoscope, Trash2, UserRound, Vote, X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type PortalKind = "dmv" | "hospital" | "county";
 type TextSize = "standard" | "large" | "extra-large";
@@ -31,6 +32,16 @@ const tasks = {
   county: ["pay-property-tax", "find-trash-day", "register-to-vote", "apply-for-permit"],
 };
 const toolResult = (text: string) => ({ content: [{ type: "text", text }] });
+
+function readSavedExperience(): Experience {
+  if (typeof window === "undefined") return defaults;
+  try {
+    const saved = localStorage.getItem("adaptive-web-preferences");
+    return saved ? { ...defaults, ...JSON.parse(saved), focusTask: null } : defaults;
+  } catch {
+    return defaults;
+  }
+}
 
 function registerExperienceTools(kind: PortalKind, getExperience: () => Experience, update: (changes: Partial<Experience>) => void, reset: () => void, getMobilePreview: () => MobilePreview, showMobilePreview: (input: Partial<MobilePreview> & { device?: PreviewDevice }) => MobilePreview, closeMobilePreview: () => void) {
   const modelContext = (document as Document & { modelContext?: { registerTool: (tool: Record<string, unknown>) => void; unregisterTool?: (name: string) => void } }).modelContext;
@@ -57,7 +68,7 @@ const linkSets = {
 };
 
 function NetworkBar({ kind }: { kind: PortalKind }) {
-  return <div className="network-bar"><div className="site-width network-inner"><span>Local services</span><div>{kind !== "dmv" && <a href="/">Carolina DMV</a>}{kind !== "hospital" && <a href="/hospital">Piedmont Regional Health</a>}{kind !== "county" && <a href="/county">Oak County</a>}</div></div></div>;
+  return <div className="network-bar"><div className="site-width network-inner"><span>Local services</span><div>{kind !== "dmv" && <Link href="/">Carolina DMV</Link>}{kind !== "hospital" && <Link href="/hospital">Piedmont Regional Health</Link>}{kind !== "county" && <Link href="/county">Oak County</Link>}</div></div></div>;
 }
 
 function Brand({ kind }: { kind: PortalKind }) {
@@ -160,14 +171,13 @@ function MobilePreviewPanel({ value, onClose }: { value: MobilePreview; onClose:
 }
 
 export function Portal({ kind }: { kind: PortalKind }) {
-  const [experience, setExperience] = useState<Experience>(defaults); const [optionsOpen, setOptionsOpen] = useState(false); const [loaded, setLoaded] = useState(false);
+  const [experience, setExperience] = useState<Experience>(readSavedExperience); const [optionsOpen, setOptionsOpen] = useState(false);
   const [mobilePreview, setMobilePreview] = useState<MobilePreview>({ ...defaultMobilePreview, route: kind });
-  useEffect(()=>{ try { const saved=localStorage.getItem("adaptive-web-preferences"); if(saved) setExperience({ ...defaults, ...JSON.parse(saved), focusTask:null }) } catch {} setLoaded(true) },[]);
-  const update=(changes:Partial<Experience>)=>setExperience((current)=>{ const next={...current,...changes}; try { localStorage.setItem("adaptive-web-preferences",JSON.stringify({...next,focusTask:null})) } catch {} return next });
-  const reset=()=>{ setExperience(defaults); setMobilePreview((current)=>({...current, enabled:false})); try { localStorage.removeItem("adaptive-web-preferences") } catch {} };
-  const showMobilePreview=(input:Partial<MobilePreview> & { device?: PreviewDevice })=>{ const device = input.device && previewDevices[input.device] ? input.device : defaultMobilePreview.device; const preset = previewDevices[device]; const next = { enabled:true, device, width: input.width ?? preset.width, height: input.height ?? preset.height, route: input.route ?? kind }; setMobilePreview(next); return next; };
-  const closeMobilePreview=()=>setMobilePreview((current)=>({...current, enabled:false}));
-  useEffect(()=>registerExperienceTools(kind,()=>experience,update,reset,()=>mobilePreview,showMobilePreview,closeMobilePreview),[kind,experience,mobilePreview]);
+  const update=useCallback((changes:Partial<Experience>)=>setExperience((current)=>{ const next={...current,...changes}; try { localStorage.setItem("adaptive-web-preferences",JSON.stringify({...next,focusTask:null})) } catch {} return next }),[]);
+  const reset=useCallback(()=>{ setExperience(defaults); setMobilePreview((current)=>({...current, enabled:false})); try { localStorage.removeItem("adaptive-web-preferences") } catch {} },[]);
+  const showMobilePreview=useCallback((input:Partial<MobilePreview> & { device?: PreviewDevice })=>{ const device = input.device && previewDevices[input.device] ? input.device : defaultMobilePreview.device; const preset = previewDevices[device]; const next = { enabled:true, device, width: input.width ?? preset.width, height: input.height ?? preset.height, route: input.route ?? kind }; setMobilePreview(next); return next; },[kind]);
+  const closeMobilePreview=useCallback(()=>setMobilePreview((current)=>({...current, enabled:false})),[]);
+  useEffect(()=>registerExperienceTools(kind,()=>experience,update,reset,()=>mobilePreview,showMobilePreview,closeMobilePreview),[kind,experience,mobilePreview,update,reset,showMobilePreview,closeMobilePreview]);
   const active=useMemo(()=>Object.entries(experience).some(([key,value])=>key==="focusTask"?Boolean(value):value!==defaults[key as keyof Experience]),[experience]);
-  return <div className={`portal portal-${kind}`} data-text={experience.textSize} data-contrast={experience.contrast} data-spacing={experience.spacing} data-motion={experience.reducedMotion?"reduced":"standard"}><Header kind={kind} simplified={experience.navigation==="simplified"} onOptions={()=>setOptionsOpen(true)}/>{active&&!experience.focusTask&&loaded&&<div className="active-preferences"><div className="site-width"><CheckCircle2/><span>{experience.plainLanguage ? "Plain language is active. Content has been rewritten with shorter sentences and more familiar words." : "Your display preferences are active."}</span><button onClick={reset}>Restore standard display</button></div></div>}{!experience.focusTask&&<MovingUpdates kind={kind} reducedMotion={experience.reducedMotion}/>} {experience.focusTask?<FocusPanel kind={kind} task={experience.focusTask} onReset={reset}/>:kind==="dmv"?<DmvHome plain={experience.plainLanguage}/>:kind==="hospital"?<HospitalHome plain={experience.plainLanguage}/>:<CountyHome plain={experience.plainLanguage}/>}<Footer kind={kind}/>{optionsOpen&&<OptionsPanel value={experience} onChange={update} onClose={()=>setOptionsOpen(false)} onReset={reset}/>}<MobilePreviewPanel value={mobilePreview} onClose={closeMobilePreview}/></div>;
+  return <div className={`portal portal-${kind}`} data-text={experience.textSize} data-contrast={experience.contrast} data-spacing={experience.spacing} data-motion={experience.reducedMotion?"reduced":"standard"}><Header kind={kind} simplified={experience.navigation==="simplified"} onOptions={()=>setOptionsOpen(true)}/>{active&&!experience.focusTask&&<div className="active-preferences"><div className="site-width"><CheckCircle2/><span>{experience.plainLanguage ? "Plain language is active. Content has been rewritten with shorter sentences and more familiar words." : "Your display preferences are active."}</span><button onClick={reset}>Restore standard display</button></div></div>}{!experience.focusTask&&<MovingUpdates kind={kind} reducedMotion={experience.reducedMotion}/>} {experience.focusTask?<FocusPanel kind={kind} task={experience.focusTask} onReset={reset}/>:kind==="dmv"?<DmvHome plain={experience.plainLanguage}/>:kind==="hospital"?<HospitalHome plain={experience.plainLanguage}/>:<CountyHome plain={experience.plainLanguage}/>}<Footer kind={kind}/>{optionsOpen&&<OptionsPanel value={experience} onChange={update} onClose={()=>setOptionsOpen(false)} onReset={reset}/>}<MobilePreviewPanel value={mobilePreview} onClose={closeMobilePreview}/></div>;
 }

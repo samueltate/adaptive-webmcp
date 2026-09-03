@@ -91,7 +91,7 @@ https://adaptive-web.nextszn.chatgpt.site
 
 ## Public Repository Link
 
-TODO: Add the public GitHub, GitLab, or Bitbucket URL after the repo is created.
+https://github.com/samueltate/adaptive-webmcp
 
 ## Demo Video
 
@@ -122,7 +122,7 @@ Demo outline:
 - Live URL is public on ChatGPT Sites.
 - README now describes the actual project instead of the starter template.
 - MIT license file has been added for public repository visibility.
-- Public repository URL still needs to be created and added.
+- Public repository URL is ready: https://github.com/samueltate/adaptive-webmcp
 - Public YouTube demo video still needs to be recorded and added.
 
 ## Known Limitations
@@ -138,7 +138,7 @@ Demo outline:
 - App Status: New
 - Live URL that judges can access using ChatGPT's in-app browser or Google Chrome with WebMCP enabled: https://adaptive-web.nextszn.chatgpt.site
 - Testing instructions: Use ChatGPT's in-app browser or Chrome 149+ with WebMCP enabled. Run the WebMCP test script listed above.
-- URL to your public code repo: TODO
+- URL to your public code repo: https://github.com/samueltate/adaptive-webmcp
 - Which agent(s) or client(s) did you test your WebMCP tools with?: TODO
 - Which AI tools have you leveraged while working on this project?: Codex, ChatGPT
 - Describe the level of learning you/your team derived from the project: Significant
